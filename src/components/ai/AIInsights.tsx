@@ -32,7 +32,7 @@ export function AIInsights({ userId }: AIInsightsProps) {
     if (currentUserId) {
       loadInsights()
     }
-  }, [currentUserId])
+  }, [currentUserId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadInsights = async () => {
     if (!currentUserId) return

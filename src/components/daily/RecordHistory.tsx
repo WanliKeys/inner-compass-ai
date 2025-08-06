@@ -32,7 +32,7 @@ export function RecordHistory() {
     if (user) {
       loadRecords()
     }
-  }, [user])
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadRecords = async () => {
     if (!user) return

@@ -28,7 +28,7 @@ export function AIPlan({ userId }: AIPlanProps) {
     if (currentUserId) {
       generatePlan()
     }
-  }, [currentUserId])
+  }, [currentUserId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const generatePlan = async () => {
     if (!currentUserId) return

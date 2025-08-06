@@ -37,7 +37,7 @@ export function DailyRecordForm({ onSubmit }: DailyRecordFormProps) {
     if (user) {
       loadExistingRecord()
     }
-  }, [user, formData.date])
+  }, [user, formData.date]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadExistingRecord = async () => {
     if (!user) return

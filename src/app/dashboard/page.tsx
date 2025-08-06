@@ -212,7 +212,7 @@ export default function Dashboard() {
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                       <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">📝 开始记录</h4>
                       <p className="text-blue-600 dark:text-blue-300 text-sm">
-                        点击"开始记录"按钮，记录您今天的情绪、精力和成就
+                        点击&quot;开始记录&quot;按钮，记录您今天的情绪、精力和成就
                       </p>
                     </div>
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">

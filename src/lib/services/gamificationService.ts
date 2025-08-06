@@ -246,7 +246,21 @@ export class GamificationService {
       .eq('user_id', userId)
       .order('date', { ascending: false })
 
-    const streak = this.calculateStreak(records?.map(r => ({ ...r, user_id: userId, mood_score: 5, energy_level: 5, productivity_score: 5, goals_completed: 0 })) || [])
+    const streak = this.calculateStreak(records?.map(r => ({
+      ...r,
+      id: '',
+      user_id: userId,
+      mood_score: 5,
+      energy_level: 5,
+      productivity_score: 5,
+      goals_completed: 0,
+      gratitude_notes: '',
+      achievements: [],
+      challenges: [],
+      reflections: '',
+      created_at: '',
+      updated_at: ''
+    })) || [])
 
     await supabase
       .from('profiles')

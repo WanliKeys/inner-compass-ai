@@ -34,7 +34,7 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
     if (currentUserId) {
       loadGameData()
     }
-  }, [currentUserId, profile])
+  }, [currentUserId, profile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadGameData = async () => {
     if (!currentUserId) return
