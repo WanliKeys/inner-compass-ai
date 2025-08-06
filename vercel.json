@@ -3,11 +3,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "devCommand": "npm run dev",
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "DEEPSEEK_API_KEY": "@DEEPSEEK_API_KEY",
-    "DEEPSEEK_API_BASE_URL": "@DEEPSEEK_API_BASE_URL"
-  }
+  "devCommand": "npm run dev"
 }
