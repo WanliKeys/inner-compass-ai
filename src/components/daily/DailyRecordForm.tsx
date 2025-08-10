@@ -8,18 +8,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { getDateString } from '@/lib/utils'
+import { fireConfetti } from '@/lib/celebrate'
+import { GamificationService } from '@/lib/services/gamificationService'
 
 interface DailyRecordFormProps {
   onSubmit?: (record: DailyRecord) => void
+  initialDate?: string
 }
 
-export function DailyRecordForm({ onSubmit }: DailyRecordFormProps) {
+export function DailyRecordForm({ onSubmit, initialDate }: DailyRecordFormProps) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [existingRecord, setExistingRecord] = useState<DailyRecord | null>(null)
   
   const [formData, setFormData] = useState<DailyRecordInput>({
-    date: getDateString(),
+    date: initialDate || getDateString(),
     mood_score: 5,
     energy_level: 5,
     productivity_score: 5,
@@ -59,6 +62,22 @@ export function DailyRecordForm({ onSubmit }: DailyRecordFormProps) {
         })
       } else {
         setExistingRecord(null)
+        // 如果今天没有记录，用“昨天”的值作为基线，降低填写摩擦
+        try {
+          const yesterday = new Date(formData.date)
+          yesterday.setDate(yesterday.getDate() - 1)
+          const ymd = yesterday.toISOString().split('T')[0]
+          const prev = await DailyRecordService.getRecordByDate(user.id, ymd)
+          if (prev) {
+            setFormData(prevState => ({
+              ...prevState,
+              mood_score: prev.mood_score,
+              energy_level: prev.energy_level,
+              productivity_score: prev.productivity_score,
+              goals_completed: 0,
+            }))
+          }
+        } catch {}
       }
     } catch (error) {
       console.error('Error loading existing record:', error)
@@ -78,15 +97,72 @@ export function DailyRecordForm({ onSubmit }: DailyRecordFormProps) {
     try {
       let savedRecord: DailyRecord
 
+      // 判断是否为补记（日期不是今天，且在24小时窗口内）
+      const todayStr = getDateString()
+      const isBackfill = formData.date !== todayStr && (new Date().getTime() - new Date(formData.date).getTime() <= 24 * 60 * 60 * 1000)
+
+      // 限制：24小时内仅允许一次补记（客户端约束）
+      if (isBackfill) {
+        try {
+          const last = localStorage.getItem('lastBackfillAt')
+          if (last) {
+            const lastMs = parseInt(last, 10)
+            if (!Number.isNaN(lastMs) && Date.now() - lastMs < 24 * 60 * 60 * 1000) {
+              const warn = document.createElement('div')
+              warn.textContent = '今天的补记次数已用完（24小时内限一次）'
+              warn.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded bg-yellow-600 text-white shadow-lg'
+              document.body.appendChild(warn)
+              setTimeout(() => warn.remove(), 2200)
+              setLoading(false)
+              return
+            }
+          }
+        } catch {}
+      }
+
+      const payload: DailyRecordInput = {
+        ...formData,
+        achievements: (() => {
+          const list = [...(formData.achievements || [])]
+          if (isBackfill && !list.includes('补记')) list.push('补记')
+          return list
+        })()
+      }
+
       if (existingRecord) {
         console.log('Updating existing record:', existingRecord.id)
-        savedRecord = await DailyRecordService.updateRecord(existingRecord.id, formData)
+        savedRecord = await DailyRecordService.updateRecord(existingRecord.id, payload)
       } else {
         console.log('Creating new record for user:', user.id)
-        savedRecord = await DailyRecordService.createRecord(user.id, formData)
+        savedRecord = await DailyRecordService.createRecord(user.id, payload)
       }
 
       console.log('Record saved successfully:', savedRecord)
+      // 计算并提示本次获得的积分
+      const earnedPoints = GamificationService.getRecordReward({
+        ...savedRecord,
+        achievements: savedRecord.achievements || [],
+        challenges: savedRecord.challenges || [],
+        gratitude_notes: savedRecord.gratitude_notes || '',
+        reflections: savedRecord.reflections || ''
+      })
+
+      // 更新用户积分/等级/连续天数
+      await GamificationService.updateUserGameStats(user.id)
+
+      // 轻量烟花与表单内提示
+      fireConfetti({ particleCount: 60, spread: 70, origin: { x: 0.5, y: 0.3 } })
+      const toast = document.createElement('div')
+      toast.textContent = `已保存！本次记录获得约 ${earnedPoints} 积分`
+      toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded bg-green-600 text-white shadow-lg'
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 2200)
+
+      // 如果是补记，记录一次本地使用次数（用于24小时限制）
+      if (isBackfill) {
+        try { localStorage.setItem('lastBackfillAt', String(Date.now())) } catch {}
+      }
+
       onSubmit?.(savedRecord)
     } catch (error) {
       console.error('Error saving record:', error)
@@ -155,8 +231,9 @@ export function DailyRecordForm({ onSubmit }: DailyRecordFormProps) {
           {/* 评分区域 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                情绪评分 ({formData.mood_score}/10)
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                <span>情绪评分 ({formData.mood_score}/10)</span>
+                <span className="text-xs text-gray-500">按 ← → 微调</span>
               </label>
               <input
                 type="range"
@@ -174,8 +251,9 @@ export function DailyRecordForm({ onSubmit }: DailyRecordFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                精力水平 ({formData.energy_level}/10)
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                <span>精力水平 ({formData.energy_level}/10)</span>
+                <span className="text-xs text-gray-500">按 ← → 微调</span>
               </label>
               <input
                 type="range"
@@ -193,8 +271,9 @@ export function DailyRecordForm({ onSubmit }: DailyRecordFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                生产力 ({formData.productivity_score}/10)
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                <span>生产力 ({formData.productivity_score}/10)</span>
+                <span className="text-xs text-gray-500">按 ← → 微调</span>
               </label>
               <input
                 type="range"

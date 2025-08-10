@@ -15,6 +15,8 @@ import {
   EyeOff,
   RefreshCw
 } from 'lucide-react'
+import { useAuth as useAuthContext } from '@/contexts/AuthContext'
+import { Button as UIButton } from '@/components/ui/Button'
 
 interface AIInsightsProps {
   userId?: string
@@ -25,6 +27,7 @@ export function AIInsights({ userId }: AIInsightsProps) {
   const [insights, setInsights] = useState<AIInsight[]>([])
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
+  const [markingAll, setMarkingAll] = useState(false)
 
   const currentUserId = userId || user?.id
 
@@ -87,6 +90,19 @@ export function AIInsights({ userId }: AIInsightsProps) {
       )
     } catch (error) {
       console.error('Error marking insight as read:', error)
+    }
+  }
+
+  const markAllAsRead = async () => {
+    if (!currentUserId) return
+    setMarkingAll(true)
+    try {
+      await AIInsightService.markAllAsRead(currentUserId)
+      setInsights(prev => prev.map(i => ({ ...i, is_read: true })))
+    } catch (error) {
+      console.error('Error marking all insights as read:', error)
+    } finally {
+      setMarkingAll(false)
     }
   }
 
@@ -155,21 +171,31 @@ export function AIInsights({ userId }: AIInsightsProps) {
             <Brain className="w-5 h-5" />
             AI 智能洞察
           </CardTitle>
-          <Button
-            onClick={triggerAnalysis}
-            disabled={analyzing}
-            variant="outline"
-            size="sm"
-          >
-            {analyzing ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                分析中...
-              </>
-            ) : (
-              '重新分析'
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={markAllAsRead}
+              disabled={markingAll || insights.length === 0}
+              variant="outline"
+              size="sm"
+            >
+              全部已读
+            </Button>
+            <Button
+              onClick={triggerAnalysis}
+              disabled={analyzing}
+              variant="outline"
+              size="sm"
+            >
+              {analyzing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  分析中...
+                </>
+              ) : (
+                '重新分析'
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-6">

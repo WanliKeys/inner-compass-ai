@@ -14,6 +14,8 @@ import {
   TrendingUp,
   RefreshCw
 } from 'lucide-react'
+import { fireConfetti } from '@/lib/celebrate'
+import { StreakCalendar } from './StreakCalendar'
 
 interface GamificationPanelProps {
   userId?: string
@@ -78,8 +80,27 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
     setNewAchievements([])
   }
 
+  // 成就解锁烟花动效
+  useEffect(() => {
+    if (newAchievements.length > 0) {
+      // 连续三次不同角度与粒度的礼花
+      const burst = (particleCount: number, spread: number, startVelocity: number) => {
+        fireConfetti({
+          particleCount,
+          spread,
+          startVelocity,
+          origin: { x: 0.5, y: 0.3 }
+        })
+      }
+      burst(60, 60, 35)
+      setTimeout(() => burst(80, 80, 45), 200)
+      setTimeout(() => burst(100, 100, 55), 400)
+    }
+  }, [newAchievements])
+
   const unlockedAchievements = achievements.filter(a => a.unlocked)
   const lockedAchievements = achievements.filter(a => !a.unlocked)
+  const levelProgressPercent = Math.max(0, Math.min(100, 100 - pointsToNext))
 
   return (
     <div className="space-y-6">
@@ -145,7 +166,7 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{
-                    width: `${100 - (pointsToNext / 100) * 100}%`
+                    width: `${levelProgressPercent}%`
                   }}
                 ></div>
               </div>
@@ -197,6 +218,9 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
           </div>
         </CardHeader>
         <CardContent className="p-6">
+          <div className="mb-8">
+            <StreakCalendar />
+          </div>
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">成就进度</span>

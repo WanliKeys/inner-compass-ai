@@ -9,10 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "-": "^0.0.1",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.45.4",
+    "canvas": "^3.1.2",
+    "canvas-confetti": "1.9.3",
     "clsx": "^2.1.1",
+    "confetti": "^2.0.6",
+    "exact": "^1.0.1",
     "lucide-react": "^0.460.0",
     "next": "15.4.5",
     "react": "^18",
@@ -21,6 +26,7 @@
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
