@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { getDateString } from '@/lib/utils'
 import { fireConfetti } from '@/lib/celebrate'
 import { GamificationService } from '@/lib/services/gamificationService'
+import { PointsHistoryService } from '@/lib/services/pointsHistoryService'
 
 interface DailyRecordFormProps {
   onSubmit?: (record: DailyRecord) => void
@@ -149,6 +150,10 @@ export function DailyRecordForm({ onSubmit, initialDate }: DailyRecordFormProps)
 
       // 更新用户积分/等级/连续天数
       await GamificationService.updateUserGameStats(user.id)
+      // 写入积分历史（记录得分）
+      try {
+        await PointsHistoryService.add(user.id, earnedPoints, 'record', { referenceId: savedRecord.id, note: '每日记录' })
+      } catch {}
 
       // 轻量烟花与表单内提示
       fireConfetti({ particleCount: 60, spread: 70, origin: { x: 0.5, y: 0.3 } })

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { RefreshCw, FileText, Copy, Image } from 'lucide-react'
-import { ShareableImage } from './ShareableImage'
+ 
 
 export function WeeklyReport() {
   const { user } = useAuth()
@@ -62,10 +62,13 @@ export function WeeklyReport() {
   }
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>AI 周报（基础版）</CardTitle>
+          <div>
+            <CardTitle>AI 周报</CardTitle>
+            <div className="text-xs text-gray-500 mt-1">最近一周的关键指标与建议</div>
+          </div>
           <Button variant="outline" size="sm" onClick={generate} disabled={loading}>
             {loading ? (<><RefreshCw className="w-4 h-4 mr-2 animate-spin"/> 生成中...</>) : (<><RefreshCw className="w-4 h-4 mr-2"/> 重新生成</>)}
           </Button>
@@ -73,15 +76,13 @@ export function WeeklyReport() {
       </CardHeader>
       <CardContent className="p-6">
         {report ? (
-          <div className="space-y-3">
-            <pre className="whitespace-pre-wrap text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">{report}</pre>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={copyReport}><Copy className="w-4 h-4 mr-1"/> 复制</Button>
-              <Button size="sm" onClick={downloadMd}><FileText className="w-4 h-4 mr-1"/> 下载Markdown</Button>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 max-h-96 overflow-auto">
+              <pre className="whitespace-pre-wrap text-sm leading-relaxed">{report}</pre>
             </div>
-            <div className="pt-2">
-              <div className="text-sm text-gray-600 dark:text-gray-300 mb-2 flex items-center gap-2"><Image className="w-4 h-4"/> 生成分享海报</div>
-              <ShareableImage title="本周周报" content={report} />
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={copyReport}><Copy className="w-4 h-4 mr-1"/> 复制</Button>
+              <Button size="sm" onClick={downloadMd}><FileText className="w-4 h-4 mr-1"/> 下载 Markdown</Button>
             </div>
           </div>
         ) : (

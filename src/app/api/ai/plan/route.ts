@@ -57,8 +57,15 @@ export async function POST(request: Request) {
     }
 
     try {
-      // 生成个性化计划（远端）
-      const personalizedPlan = await deepSeekService.generatePersonalizedPlan(recentRecords, userGoals)
+      // 生成个性化计划（远端，超时兜底）
+      const withTimeout = <T,>(p: Promise<T>, ms: number) => new Promise<T>((resolve, reject) => {
+        const id = setTimeout(() => reject(new Error('ai-plan-timeout')), ms)
+        p.then(v => { clearTimeout(id); resolve(v) }).catch(e => { clearTimeout(id); reject(e) })
+      })
+      const personalizedPlan = await withTimeout(
+        deepSeekService.generatePersonalizedPlan(recentRecords, userGoals),
+        15000
+      )
       return NextResponse.json({ plan: personalizedPlan })
     } catch (err) {
       console.error('Plan generation error, fallback to local plan:', err)

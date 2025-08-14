@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { CheckinService } from '@/lib/services/checkinService'
 import { DailyRecord } from '@/types'
 
 export interface Achievement {
@@ -95,7 +96,7 @@ export class GamificationService {
     if (error) throw error
 
     const totalRecords = records?.length || 0
-    const streak = this.calculateStreak(records || [])
+    const streak = await this.calculateUnifiedStreak(userId, records || [])
     
     // 基础积分计算
     let points = 0
@@ -113,6 +114,17 @@ export class GamificationService {
       if (record.productivity_score >= 8) points += 2
       if (record.goals_completed > 0) points += record.goals_completed * 3
     })
+
+    // 签到积分（每次签到 +2）
+    try {
+      const { count: checkinCount } = await supabase
+        .from('daily_checkins')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+      if (typeof checkinCount === 'number') {
+        points += checkinCount * 2
+      }
+    } catch {}
 
     return points
   }
@@ -212,6 +224,53 @@ export class GamificationService {
     return streak
   }
 
+  // 合并每日记录与签到记录，计算连续天数
+  static async calculateUnifiedStreak(userId: string, records: DailyRecord[]): Promise<number> {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // 收集记录日期集合
+    const recordDates = new Set(
+      (records || []).map(r => {
+        const d = new Date(r.date)
+        d.setHours(0, 0, 0, 0)
+        return d.toISOString().split('T')[0]
+      })
+    )
+
+    // 向后最多看 60 天的签到（足够用于 streak 计算）
+    const start = new Date()
+    start.setDate(today.getDate() - 60)
+    const startStr = start.toISOString().split('T')[0]
+    const endStr = today.toISOString().split('T')[0]
+    let checkinDates = new Set<string>()
+    try {
+      const checkins = await supabase
+        .from('daily_checkins')
+        .select('date')
+        .eq('user_id', userId)
+        .gte('date', startStr)
+        .lte('date', endStr)
+        .order('date', { ascending: false })
+      if (checkins.error) throw checkins.error
+      checkinDates = new Set((checkins.data || []).map(c => c.date))
+    } catch {}
+
+    let streak = 0
+    const cursor = new Date(today)
+    while (true) {
+      const ymd = cursor.toISOString().split('T')[0]
+      const hasActivity = recordDates.has(ymd) || checkinDates.has(ymd)
+      if (hasActivity) {
+        streak += 1
+        cursor.setDate(cursor.getDate() - 1)
+      } else {
+        break
+      }
+    }
+    return streak
+  }
+
   // 获取记录奖励积分
   static getRecordReward(record: DailyRecord): number {
     let points = 5 // 基础记录分
@@ -246,7 +305,7 @@ export class GamificationService {
       .eq('user_id', userId)
       .order('date', { ascending: false })
 
-    const streak = this.calculateStreak(records?.map(r => ({
+    const streak = await this.calculateUnifiedStreak(userId, (records?.map(r => ({
       ...r,
       id: '',
       user_id: userId,
@@ -260,7 +319,7 @@ export class GamificationService {
       reflections: '',
       created_at: '',
       updated_at: ''
-    })) || [])
+    })) || []))
 
     await supabase
       .from('profiles')

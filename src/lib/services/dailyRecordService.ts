@@ -50,18 +50,14 @@ export class DailyRecordService {
         .select('*')
         .eq('user_id', userId)
         .eq('date', date)
-        .single()
+        .maybeSingle()
 
-      if (error) {
-        console.log('Supabase error details:', error)
-        if (error.code === 'PGRST116') {
-          // 记录不存在，这是正常情况
-          console.log('No record found for this date (expected behavior)')
-          return null
-        }
-        throw error
-      }
+      if (error) throw error
       
+      if (!data) {
+        console.log('No record found for this date (expected behavior)')
+        return null
+      }
       console.log('Record found:', data)
       return data
     } catch (error) {

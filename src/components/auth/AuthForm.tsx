@@ -71,10 +71,15 @@ export function AuthForm({ mode = 'signin', onSuccess }: AuthFormProps) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          {isSignUp ? '注册账户' : '登录'}
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-2xl rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-3xl font-extrabold text-center tracking-tight">
+          {isSignUp ? '注册' : '登录'}
         </h2>
+        {!isSignUp && (
+          <p className="text-sm text-gray-500 dark:text-gray-300 text-center mt-2 mb-6">
+            登录后自动签到 +2 积分
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignUp && (
@@ -130,13 +135,13 @@ export function AuthForm({ mode = 'signin', onSuccess }: AuthFormProps) {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full"
+            className="w-full h-12 text-lg"
           >
-            {loading ? '处理中...' : isSignUp ? '注册' : '登录'}
+            {loading ? (isSignUp ? '注册中...' : '登录中...') : (isSignUp ? '注册' : '登录')}
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-300">
           <button
             type="button"
             onClick={() => {
@@ -148,7 +153,7 @@ export function AuthForm({ mode = 'signin', onSuccess }: AuthFormProps) {
                 setPassword('')
                 setFullName('')
                 setRememberMe(false)
-                localStorage.removeItem('rememberedCredentials')
+                // 不清除已记住的凭据，防止误删
               } else {
                 // 切换到登录模式时检查是否有保存的凭据
                 const savedCredentials = localStorage.getItem('rememberedCredentials')
@@ -166,7 +171,7 @@ export function AuthForm({ mode = 'signin', onSuccess }: AuthFormProps) {
               }
               setError(null)
             }}
-            className="text-primary-600 hover:text-primary-700 text-sm"
+            className="text-primary-600 hover:text-primary-700"
           >
             {isSignUp ? '已有账户？立即登录' : '没有账户？立即注册'}
           </button>

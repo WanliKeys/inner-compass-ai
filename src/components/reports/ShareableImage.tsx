@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import { Button } from '@/components/ui/Button'
 
 // 简易海报导出：将内容绘制到Canvas并下载
-export function ShareableImage({ title, content }: { title: string; content: string }) {
+export function ShareableImage({ title = '我的周报', content = '' }: { title?: string; content?: string }) {
   const ref = useRef<HTMLCanvasElement | null>(null)
 
   const download = () => {
@@ -36,7 +36,7 @@ export function ShareableImage({ title, content }: { title: string; content: str
     // 正文
     ctx.fillStyle = '#374151'
     ctx.font = '28px system-ui, -apple-system, Segoe UI, Roboto'
-    const lines = content.split('\n')
+    const lines = (content || '').split('\n')
     let y = 160
     for (const line of lines) {
       wrapText(ctx, line, 60, y, width - 120, 36)
@@ -56,10 +56,10 @@ export function ShareableImage({ title, content }: { title: string; content: str
   }
 
   return (
-    <div className="space-y-2">
-      <canvas ref={onCanvasRef} className="w-full max-w-xl border rounded bg-white" />
-      <div>
-        <Button onClick={download}>下载海报</Button>
+    <div className="space-y-3">
+      <canvas ref={onCanvasRef} className="w-full max-w-2xl border rounded-xl bg-white shadow" />
+      <div className="flex justify-end">
+        <Button onClick={download} variant="outline">下载海报</Button>
       </div>
     </div>
   )

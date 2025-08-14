@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { fireConfetti } from '@/lib/celebrate'
 import { StreakCalendar } from './StreakCalendar'
+import { PointsHistoryList } from './PointsHistoryList'
 
 interface GamificationPanelProps {
   userId?: string
@@ -29,6 +30,7 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
   const [pointsToNext, setPointsToNext] = useState(100)
   const [loading, setLoading] = useState(false)
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([])
+  
 
   const currentUserId = userId || user?.id
 
@@ -36,10 +38,12 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
     if (currentUserId) {
       loadGameData()
     }
-  }, [currentUserId, profile]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentUserId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 无调试模式逻辑
 
   const loadGameData = async () => {
-    if (!currentUserId) return
+    if (!currentUserId || loading) return
 
     setLoading(true)
     try {
@@ -66,8 +70,10 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
       setUserLevel(level)
       setPointsToNext(toNext)
 
-      // 更新数据库中的用户统计数据
-      await GamificationService.updateUserGameStats(currentUserId)
+      // 更新数据库中的用户统计数据（放到后台，不阻塞前端 loading）
+      Promise.resolve()
+        .then(() => GamificationService.updateUserGameStats(currentUserId))
+        .catch((e) => console.error('Update game stats (background) failed:', e))
 
     } catch (error) {
       console.error('Error loading game data:', error)
@@ -101,9 +107,16 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
   const unlockedAchievements = achievements.filter(a => a.unlocked)
   const lockedAchievements = achievements.filter(a => !a.unlocked)
   const levelProgressPercent = Math.max(0, Math.min(100, 100 - pointsToNext))
+  const achievementsProgressPercent = achievements.length > 0
+    ? Math.max(0, Math.min(100, (unlockedAchievements.length / achievements.length) * 100))
+    : 0
 
   return (
     <div className="space-y-6">
+      {/* 积分历史 */}
+      {currentUserId && (
+        <PointsHistoryList userId={currentUserId} />
+      )}
       {/* 新成就通知 */}
       {newAchievements.length > 0 && (
         <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
@@ -232,7 +245,7 @@ export function GamificationPanel({ userId }: GamificationPanelProps) {
               <div
                 className="bg-green-600 h-2 rounded-full transition-all duration-300"
                 style={{
-                  width: `${(unlockedAchievements.length / achievements.length) * 100}%`
+                  width: `${achievementsProgressPercent}%`
                 }}
               ></div>
             </div>

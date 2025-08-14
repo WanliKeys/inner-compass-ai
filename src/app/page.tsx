@@ -1,21 +1,40 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthForm } from '@/components/auth/AuthForm'
 import { Button } from '@/components/ui/Button'
 
 export default function Home() {
-  const { user, loading } = useAuth()
+  const { user, loading, signIn } = useAuth()
   const router = useRouter()
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const featuresRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (user && !loading) {
       router.push('/dashboard')
+      return
     }
-  }, [user, loading, router])
+    // 无会话但有本地记住的凭据时，自动静默登录一次
+    if (!user && !loading) {
+      try {
+        // 若刚退出，跳过本次静默登录
+        const just = localStorage.getItem('auth:justSignedOut')
+        if (just) { localStorage.removeItem('auth:justSignedOut'); return }
+        const saved = localStorage.getItem('rememberedCredentials')
+        if (saved) {
+          const { email, password } = JSON.parse(saved)
+          if (email && password) {
+            (async () => {
+              try { await signIn(email, password) } catch {}
+            })()
+          }
+        }
+      } catch {}
+    }
+  }, [user, loading, router, signIn])
 
   if (loading) {
     return (
@@ -34,47 +53,66 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative z-10 pb-8 bg-gray-50 dark:bg-gray-900 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-            <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
-              <div className="sm:text-center lg:text-left">
-                <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
-                  <span className="block">Inner Compass AI</span>
-                  <span className="block text-primary-600">个人成长助手</span>
-                </h1>
-                <p className="mt-3 text-base text-gray-500 dark:text-gray-300 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  记录每一天的成长轨迹，让AI为你分析行为模式，推荐个性化成长计划。
-                  建立持续的成长习惯，实现螺旋式上升的人生。
-                </p>
-                <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                  <div className="rounded-md shadow">
-                    <Button
-                      onClick={() => setShowAuthModal(true)}
-                      className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 md:py-4 md:text-lg md:px-10"
-                    >
-                      开始记录成长
-                    </Button>
-                  </div>
-                </div>
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 relative">
+      {/* 背景装饰 */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full blur-3xl opacity-30 bg-primary-400/40" />
+        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl opacity-30 bg-secondary-400/40" />
+      </div>
+
+      {/* Hero */}
+      <section className="relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20 grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-primary-600/10 text-primary-600 ring-1 ring-primary-600/20">
+              AI 驱动 · 习惯养成 · 可视化洞察
+            </div>
+            <h1 className="mt-4 text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+              内在罗盘，指引你的长期成长
+            </h1>
+            <p className="mt-4 text-gray-600 dark:text-gray-300 text-lg leading-relaxed">
+              记录每日心情、精力与产出，AI 持续分析趋势并给出行动建议。以积分、连续天数与成就激励，帮助你形成可持续的成长习惯。
+            </p>
+            <div className="mt-8 flex items-center gap-3">
+              <Button onClick={() => setShowAuthModal(true)} className="px-6 py-3 bg-primary-600 hover:bg-primary-700">
+                开始记录成长
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => featuresRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="px-6 py-3"
+              >
+                了解功能
+              </Button>
+            </div>
+            <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 p-4">
+                <div className="text-xl font-bold text-gray-900 dark:text-white">7天</div>
+                <div className="text-xs text-gray-500">趋势可视化</div>
               </div>
-            </main>
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 p-4">
+                <div className="text-xl font-bold text-gray-900 dark:text-white">AI</div>
+                <div className="text-xs text-gray-500">洞察与计划</div>
+              </div>
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 p-4">
+                <div className="text-xl font-bold text-gray-900 dark:text-white">+积分</div>
+                <div className="text-xs text-gray-500">成就激励</div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
-          <div className="h-56 w-full bg-gradient-to-r from-primary-400 to-secondary-400 sm:h-72 md:h-96 lg:w-full lg:h-full flex items-center justify-center">
-            <div className="text-center text-white">
-              <div className="text-6xl font-bold mb-4">📈</div>
-              <div className="text-xl font-semibold">智能成长记录平台</div>
+          <div className="relative">
+            <div className="rounded-2xl h-72 sm:h-96 w-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center shadow-2xl ring-1 ring-white/20">
+              <div className="text-center text-white">
+                <div className="text-7xl font-bold mb-4 drop-shadow">📈</div>
+                <div className="text-2xl font-semibold drop-shadow">智能成长记录平台</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Features Section */}
-      <div className="py-12 bg-white dark:bg-gray-800">
+      {/* Features */}
+      <section ref={featuresRef} className="py-12 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:text-center">
             <h2 className="text-base text-primary-600 font-semibold tracking-wide uppercase">功能特色</h2>
@@ -120,17 +158,14 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Auth Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  欢迎使用 Inner Compass AI
-                </h2>
+              <div className="flex justify-end items-center mb-4">
                 <button
                   onClick={() => setShowAuthModal(false)}
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"

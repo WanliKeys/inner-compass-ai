@@ -56,15 +56,19 @@ export function AIInsights({ userId }: AIInsightsProps) {
 
     setAnalyzing(true)
     try {
+      const controller = new AbortController()
+      const id = setTimeout(() => controller.abort(), 15000)
       const response = await fetch('/api/ai/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ userId: currentUserId }),
+        signal: controller.signal,
       })
 
       const result = await response.json()
+      clearTimeout(id)
 
       if (response.ok) {
         await loadInsights() // 重新加载洞察
@@ -173,27 +177,20 @@ export function AIInsights({ userId }: AIInsightsProps) {
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button
+              onClick={triggerAnalysis}
+              disabled={analyzing}
+              variant="outline"
+              size="sm"
+            >
+              {analyzing ? (<><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> 分析中...</>) : '重新分析'}
+            </Button>
+            <Button
               onClick={markAllAsRead}
               disabled={markingAll || insights.length === 0}
               variant="outline"
               size="sm"
             >
               全部已读
-            </Button>
-            <Button
-              onClick={triggerAnalysis}
-              disabled={analyzing}
-              variant="outline"
-              size="sm"
-            >
-              {analyzing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  分析中...
-                </>
-              ) : (
-                '重新分析'
-              )}
             </Button>
           </div>
         </div>
@@ -209,8 +206,8 @@ export function AIInsights({ userId }: AIInsightsProps) {
               return (
                 <div
                   key={insight.id}
-                  className={`p-4 rounded-lg border ${
-                    insight.is_read ? 'opacity-75' : 'border-l-4 border-l-primary-500'
+                  className={`p-4 rounded-lg border bg-white dark:bg-gray-900/40 backdrop-blur ${
+                    insight.is_read ? 'opacity-75' : 'ring-1 ring-primary-500/20'
                   } ${colorClass}`}
                 >
                   <div className="flex items-start justify-between">
@@ -225,7 +222,7 @@ export function AIInsights({ userId }: AIInsightsProps) {
                         </span>
                       </div>
                       <h4 className="font-semibold mb-2">{insight.title}</h4>
-                      <p className="text-sm leading-relaxed">{insight.content}</p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{insight.content}</p>
                       <div className="text-xs text-gray-500 mt-2">
                         {new Date(insight.created_at).toLocaleDateString('zh-CN', {
                           year: 'numeric',

@@ -41,15 +41,19 @@ export function AIPlan({ userId }: AIPlanProps) {
 
     setGenerating(true)
     try {
+      const controller = new AbortController()
+      const id = setTimeout(() => controller.abort(), 15000)
       const response = await fetch('/api/ai/plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ userId: currentUserId }),
+        signal: controller.signal,
       })
 
       const result = await response.json()
+      clearTimeout(id)
 
       if (response.ok) {
         setPlan(result.plan)

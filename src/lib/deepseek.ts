@@ -28,9 +28,20 @@ export class DeepSeekService {
     this.baseUrl = process.env.DEEPSEEK_API_BASE_URL || 'https://api.deepseek.com'
   }
 
+  private async fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs: number = 12000): Promise<Response> {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const res = await fetch(input, { ...(init || {}), signal: controller.signal })
+      return res
+    } finally {
+      clearTimeout(id)
+    }
+  }
+
   private async callAPI(prompt: string): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

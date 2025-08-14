@@ -59,6 +59,13 @@ export interface AIInsight {
   is_read: boolean
 }
 
+export interface DailyCheckin {
+  id: string
+  user_id: string
+  date: string
+  created_at: string
+}
+
 export interface DailyRecordInput {
   date: string
   mood_score: number
